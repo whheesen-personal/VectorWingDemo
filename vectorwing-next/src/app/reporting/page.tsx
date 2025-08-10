@@ -1,8 +1,9 @@
 'use client'
 
 import TopNav from '../../components/TopNav'
-import { Box, Container, Grid, Card, CardContent, Typography, Stack, Chip, Button, TextField } from '@mui/material'
+import { Box, Container, Grid, Card, CardContent, Typography, Stack, Button, TextField } from '@mui/material'
 import AssessmentIcon from '@mui/icons-material/Assessment'
+import { KpiStatCard, KpiTrendCard, ProgressDistributionCard, CancelReasonsCard } from '../../components/KpiCharts'
 
 export default function ReportingPage() {
   return (
@@ -15,17 +16,20 @@ export default function ReportingPage() {
               <CardContent>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <AssessmentIcon color="primary" />
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>KPI Dashboard (Mock)</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>KPI Dashboard</Typography>
                 </Stack>
                 <Grid container spacing={2} sx={{ mt: 1 }}>
-                  <Grid item xs={12} sm={6} md={3}><Stat title="Completion Rate" value="86%" /></Grid>
-                  <Grid item xs={12} sm={6} md={3}><Stat title="Cancelations (wk)" value="12" /></Grid>
-                  <Grid item xs={12} sm={6} md={3}><Stat title="Avg Hours / Student" value="41.2" /></Grid>
-                  <Grid item xs={12} sm={6} md={3}><Stat title="Aircraft Utilization" value="74%" /></Grid>
+                  <Grid item xs={12} sm={6} md={3}><KpiStatCard title="Completion Rate" value="86%" delta="+3%" deltaLabel="vs last wk" /></Grid>
+                  <Grid item xs={12} sm={6} md={3}><KpiStatCard title="Cancelations (wk)" value="12" delta="-2" deltaLabel="vs last wk" /></Grid>
+                  <Grid item xs={12} sm={6} md={3}><KpiStatCard title="Avg Hours / Student" value="41.2" delta="+0.6" deltaLabel="hrs" /></Grid>
+                  <Grid item xs={12} sm={6} md={3}><KpiStatCard title="Aircraft Utilization" value="74%" delta="+2%" /></Grid>
                 </Grid>
                 <Grid container spacing={2} sx={{ mt: 1 }}>
-                  <Grid item xs={12} md={6}><Placeholder title="Student Progress Distribution" /></Grid>
-                  <Grid item xs={12} md={6}><Placeholder title="Cancelation Causes" /></Grid>
+                  <Grid item xs={12}><KpiTrendCard /></Grid>
+                </Grid>
+                <Grid container spacing={2} sx={{ mt: 1 }}>
+                  <Grid item xs={12} md={6}><ProgressDistributionCard /></Grid>
+                  <Grid item xs={12} md={6}><CancelReasonsCard /></Grid>
                 </Grid>
                 <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
                   <TextField size="small" label="Custom report query" placeholder="e.g., Canceled flights last 30 days by reason" fullWidth />
@@ -40,24 +44,4 @@ export default function ReportingPage() {
     </Box>
   )
 }
-
-function Stat({ title, value }: { title: string; value: string }) {
-  return (
-    <Card variant="outlined">
-      <CardContent>
-        <Typography color="text.secondary" sx={{ fontSize: 12 }}>{title}</Typography>
-        <Typography variant="h5" sx={{ fontWeight: 800 }}>{value}</Typography>
-      </CardContent>
-    </Card>
-  )
-}
-
-function Placeholder({ title }: { title: string }) {
-  return (
-    <Card variant="outlined" sx={{ height: 260, display: 'grid', placeItems: 'center' }}>
-      <Typography color="text.secondary">{title} (chart placeholder)</Typography>
-    </Card>
-  )
-}
-
 
