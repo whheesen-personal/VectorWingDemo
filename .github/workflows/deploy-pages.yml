@@ -26,7 +26,8 @@ jobs:
       - name: Build Next.js static export
         working-directory: vectorwing-next
         env:
-          BASE_PATH: /${{ github.repository_owner }}/${{ github.event.repository.name }}
+          # For GitHub Project Pages (https://<owner>.github.io/<repo>/) the basePath must be "/<repo>"
+          BASE_PATH: /${{ github.event.repository.name }}
         run: |
           npm ci
           npm run export
