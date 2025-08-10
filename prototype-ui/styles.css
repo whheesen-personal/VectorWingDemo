@@ -1,0 +1,97 @@
+:root {
+  --app-bg: #0b1320;
+  --surface: #121a2a;
+  --surface-2: #192235;
+  --text: #e6edf3;
+  --muted: #9fb3c8;
+  --primary: #0ea5e9;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+}
+
+body {
+  background: var(--app-bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+#root, html, body {
+  height: 100%;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-rows: 64px 1fr;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 0;
+  height: calc(100vh - 64px);
+}
+
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid #243049;
+  padding: 16px;
+}
+
+.main {
+  background: var(--surface-2);
+  display: flex;
+  flex-direction: column;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #243049;
+  background: rgba(255,255,255,0.02);
+}
+
+.timeline-wrap {
+  flex: 1;
+  padding: 0 8px 8px 8px;
+}
+
+.vis-item.Planned {
+  background: rgba(14,165,233,0.2);
+  border-color: var(--primary);
+  color: var(--text);
+}
+
+.vis-item.Authorized {
+  background: rgba(34,197,94,0.2);
+  border-color: var(--success);
+  color: var(--text);
+}
+
+.vis-item.Canceled {
+  background: rgba(239,68,68,0.15);
+  border-color: var(--danger);
+}
+
+.conflict {
+  box-shadow: 0 0 0 2px var(--warning) inset !important;
+}
+
+.badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  margin-left: 8px;
+}
+
+.badge.success { background: var(--success); color: #05100a; }
+.badge.warn { background: var(--warning); color: #110a04; }
+.badge.info { background: var(--primary); color: #031017; }
+
+@media (max-width: 900px) {
+  .content { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+}
+
+

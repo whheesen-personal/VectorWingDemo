@@ -1,0 +1,25 @@
+The problem space is we are addressing a military flight training scheduling system and we would like to replace the existing system by developing a better one that can address the needs of our customer in a way that the current one can't.”
+
+So the current system is called FlightPro. It's been in place for about eight years, and it was purchased for around $800,000 US dollars. And there's a maintenance fees of about $120,000 per year that we are required to pay to this company that's maintaining the software.
+
+We would like to build our replacement system on the premise that we can use that money that's currently being spent on the maintenance of the existing system, and we can apply it better towards developing a new system, and hopefully, by growing towards the needs of the customer, we can then eventually expand towards other customers.
+
+The current system is primarily a scheduling tool. The scheduling part of it uses a Gantt-type view where strips can be moved according to time on the X-axis and according to asset on the Y-axis. We have different kinds of assets, such as aircraft of varying types. We have simulators, also varying types. And then we have some details like transponder codes, airspace, and things like that to add. 
+
+Of course when we create a mission we need to add the people to the mission so the crew that will be on the mission will need to be informed so they will each need their own schedule and they will all need to have their own logbooks and if it's a student the student will be following a set syllabus and according to that syllabus they will have a mission that is sequential (or non-sequential) and they will need to execute that and prepare for the next one.
+
+The aircrew are required to have hold currencies. Currencies are things like instrument ratings, medicals, boldface validity, etc. And perhaps a flying recency, for example if they have flown in the last 30 days, and whether they need to have a refresher. So the currencies should be tracked per individual, and it should be, each currency normally has an expiry date and a window during which some things needed to have happened.”
+
+The missions also have to be authorized, so there's an auth system where the supervisor looks at the plan for the day, authorizes each mission on the menu, or correction, on the schedule, and then the aircrew will authorize their missions, and then step out to go and fly. When they come back, they log their times back into the system, and then head back to the office to go and do the proc cards to write up what the student has achieved or what they are struggling with, and to assign a grade according to their performance.”
+
+So this is mostly the system that we're looking at. I would like to have some sort of a mock-up developed and I would like to then present this mock-up to our customer and then hopefully get buy-in so that we can fund future development.
+
+"I would like you to come up with a set of requirements, so draw up a list of all the requirements of this system that you can envisage. And then I would like you to think about what part of this system, what module, would make a good mock-up or a good prototype that we can show the customer.”
+
+ I would also like to think about the possibility of implementing a phased approach so that we address some of the weaknesses of the current system whilst interfacing with the system. So, for example, if the authorization and the currency parts are horrible, which they are, then we can address that by just developing a standalone but integrated currency and authorization module or modules. And these modules will then interface with the existing database but still allow users the benefit of a pleasant user experience so they can understand that if we keep tracking in the right direction, we can replace the whole system.”
+
+“So now I would like you to compile a summary of this whole problem that I've presented to you and I would like this summary to be targeted at my friend in South Africa who will be doing the development primarily and I would like him to understand the requirements, the problem areas, possibility of the company setup, as well as the option of doing a mock-up of the scheduling or alternatively targeting some current weaknesses as standalone modules such as authorization and currencies. I would like you to compile all of this into a document of about 1,500 words which I can send to him and for him to have a full idea of what the problem is.”
+
+Tech Stack:
+
+“I'm happy with Node.js. I'm happy with React + Next.JS. I'm happy with Postgres. We need to talk a bit about the cloud deployment and the considerations of on-premises versus cloud, but let's leave that for now. Let's get the tech stack first. So we got Node. We got React. We got Postgres. I would like to think about the CSS part and especially how we can really nail the front end to be almost like a native feel in terms of drag-and-drop functionality, zoom, resizing. We can have a real nice Gantt view with a lot of modern flexibility and UI integration.”
