@@ -1,4 +1,4 @@
-# Flight Training Scheduler — Prototype UI (Static)
+# VectorWing — Prototype UI (Static)
 
 A zero-build, static prototype showcasing a polished scheduling timeline, mission details dialog, and authorization status. Uses React + MUI + vis-timeline via CDN so it can be opened locally or hosted on any static host.
 

@@ -109,7 +109,7 @@
         React.createElement(M.AppBar, { position: 'static', color: 'transparent', elevation: 0, sx: { borderBottom: '1px solid #243049' } },
           React.createElement(M.Toolbar, null,
             React.createElement(MI.FlightTakeoff, { sx: { mr: 1, color: 'primary.main' } }),
-            React.createElement(M.Typography, { variant: 'h6', sx: { flexGrow: 1 } }, 'Flight Training Scheduler'),
+            React.createElement(M.Typography, { variant: 'h6', sx: { flexGrow: 1 } }, 'VectorWing Scheduler'),
             React.createElement(M.Chip, { label: 'Prototype', color: 'info', size: 'small', variant: 'outlined' })
           )
         ),
