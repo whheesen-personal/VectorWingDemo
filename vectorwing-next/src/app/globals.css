@@ -1,0 +1,46 @@
+html, body, #__next {
+  height: 100%;
+}
+* { box-sizing: border-box; }
+
+:root{
+  --bg: #0b1320;
+  --panel: #0f1a2b;
+  --panel-2:#152338;
+  --text:#e6edf3;
+  --muted:#9fb3c8;
+  --primary:#60a5fa;
+  --planned:#38bdf8;
+  --authorized:#22c55e;
+  --canceled:#f59e0b;
+}
+
+/* vis-timeline theming */
+.vis-timeline, .vis-panel, .vis-item, .vis-label, .vis-time-axis, .vis-foreground, .vis-background {
+  color: var(--text);
+}
+.vis-timeline {
+  background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+  border: 1px solid #243049;
+}
+.vis-time-axis .vis-text { font-size: 12px; color: #ffffff !important; }
+.vis-labelset .vis-label { font-size: 13px; color: #ffffff; }
+.vis-labelset .vis-label .vis-inner { color: #ffffff !important; }
+.vis-labelset .vis-label .vis-inner { padding-left: 8px; }
+.vis-grid.vis-odd { background: rgba(255,255,255,0.02); }
+
+.vis-item { border-radius: 8px; border-width: 2px; }
+.vis-item .content { padding: 2px 8px; font-weight: 600; letter-spacing: 0.2px; }
+/* Ensure the text inside scheduled blocks is white */
+.vis-item-content, .vis-item .vis-item-content { color: #ffffff !important; font-weight: 700; }
+
+/* Selected item: use dark text on highlighted background for readability */
+.vis-item.vis-selected { background-color: #facc15 !important; border-color: #f59e0b !important; }
+.vis-item.vis-selected .vis-item-content { color: #0b1320 !important; }
+.vis-item.status-Planned { background: rgba(56,189,248,0.18); border-color: var(--planned); }
+.vis-item.status-Authorized { background: rgba(34,197,94,0.18); border-color: var(--authorized); }
+.vis-item.status-Canceled { background: rgba(245,158,11,0.15); border-color: var(--canceled); }
+.vis-item.conflict { box-shadow: 0 0 0 2px #ef4444 inset; }
+
+
+
