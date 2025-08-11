@@ -14,6 +14,8 @@ import {
   TextField,
   Divider,
 } from '@mui/material'
+import NavigationIcon from '@mui/icons-material/Navigation'
+import CircleIcon from '@mui/icons-material/Circle'
 
 type Metar = {
   station: string
@@ -148,11 +150,17 @@ function WxPanels() {
     <Grid container spacing={2}>
       {demoMetar.map((m) => (
         <Grid item xs={12} key={m.station}>
-          <Card sx={{ border: '1px solid #243049' }}>
+            <Card sx={{ border: '1px solid #243049', position: 'relative' }}>
             <CardContent>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                 <Typography variant="h6" sx={{ fontWeight: 800 }}>{m.station}</Typography>
-                <Chip size="small" label={`${m.ageMin}m ago`} color="success" variant="outlined" />
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Stack direction="row" spacing={0.5} alignItems="center">
+                    <CircleIcon fontSize="small" sx={{ color: '#22c55e' }} />
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>{m.ageMin}m ago</Typography>
+                  </Stack>
+                  <WindBadge raw={m.raw} />
+                </Stack>
               </Stack>
               <WxText text={m.raw} />
               <Divider sx={{ my: 1 }} />
@@ -168,6 +176,40 @@ function WxPanels() {
       ))}
     </Grid>
   )
+}
+
+function WindBadge({ raw }: { raw: string }) {
+  const wind = parseWind(raw)
+  if (!wind) return null
+  const { dirDeg, speedKt, gustKt } = wind
+  const label = `${dirDeg === null ? 'VRB' : `${dirDeg}°`} ${gustKt ? `${speedKt}-${gustKt}` : speedKt}kt`
+  return (
+    <Stack direction="row" spacing={1} alignItems="center">
+      <Box sx={{
+        width: 28,
+        height: 28,
+        borderRadius: '50%',
+        border: '1px solid #243049',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(255,255,255,0.02)'
+      }}>
+        <NavigationIcon fontSize="small" sx={{ transform: `rotate(${(dirDeg ?? 0)}deg)`, color: 'text.secondary' as any }} />
+      </Box>
+      <Typography variant="body2" sx={{ fontWeight: 700 }}>{label}</Typography>
+    </Stack>
+  )
+}
+
+function parseWind(raw: string): { dirDeg: number | null; speedKt: number; gustKt?: number } | null {
+  // Examples: 20013G18KT, 14013KT, VRB03KT, 00000KT
+  const m = raw.match(/\b(VRB|\d{3})(\d{2,3})(G(\d{2,3}))?KT\b/)
+  if (!m) return null
+  const dir = m[1] === 'VRB' ? null : parseInt(m[1], 10)
+  const spd = parseInt(m[2], 10)
+  const gst = m[4] ? parseInt(m[4], 10) : undefined
+  return { dirDeg: dir, speedKt: spd, gustKt: gst }
 }
 
 function WxText({ text }: { text: string }) {
