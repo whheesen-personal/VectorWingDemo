@@ -21,6 +21,7 @@ type TopNavProps = {
     | 'training'
     | 'notifications'
     | 'reporting'
+    | 'repeater'
     | 'resources'
     | 'admin'
 }
@@ -92,6 +93,9 @@ export default function TopNav({ active = 'schedule' }: TopNavProps) {
           )}
           <Button component={Link} href="/reporting" startIcon={<AssessmentIcon />} sx={linkSx('reporting')}>
             Reporting
+          </Button>
+          <Button component={Link} href="/repeater" startIcon={<AssessmentIcon />} sx={linkSx('repeater')}>
+            Repeater Screen
           </Button>
           <Button component={Link} href="/resources" startIcon={<PrecisionManufacturingIcon />} sx={linkSx('resources')}>
             Resources
