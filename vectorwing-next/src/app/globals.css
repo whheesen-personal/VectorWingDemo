@@ -42,5 +42,8 @@ html, body, #__next {
 .vis-item.status-Canceled { background: rgba(245,158,11,0.15); border-color: var(--canceled); }
 .vis-item.conflict { box-shadow: 0 0 0 2px #ef4444 inset; }
 
+/* Tag pill container inside vis items (rendered via content) */
+.tag-pill { display: inline-flex; align-items: center; gap: 4px; padding: 0 6px; height: 18px; border-radius: 999px; border: 1px solid currentColor; font-size: 11px; font-weight: 800; background: transparent; }
+
 
 

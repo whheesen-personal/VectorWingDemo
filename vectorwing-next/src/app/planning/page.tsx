@@ -20,20 +20,18 @@ import {
   DialogActions,
   TextField,
   InputAdornment,
-  TextFieldProps,
   Box,
   Tooltip,
+  IconButton,
 } from '@mui/material'
-import PublishIcon from '@mui/icons-material/Publish'
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
-import VerifiedUserIcon from '@mui/icons-material/VerifiedUser'
-import CancelIcon from '@mui/icons-material/Cancel'
+import PublishIcon from '@mui/icons-material/Publish'
 import SearchIcon from '@mui/icons-material/Search'
-import FlightIcon from '@mui/icons-material/Flight'
-import DeveloperBoardIcon from '@mui/icons-material/DeveloperBoard'
-import TopNav from '../components/TopNav'
-import { useAppStore } from '../state/store'
+import LabelIcon from '@mui/icons-material/Label'
+import AddIcon from '@mui/icons-material/Add'
+import ColorizeIcon from '@mui/icons-material/Colorize'
+import TopNav from '../../components/TopNav'
+import { useAppStore } from '../../state/store'
 
 import { DataSet } from 'vis-data'
 import { Timeline } from 'vis-timeline/standalone'
@@ -41,12 +39,12 @@ import { Timeline } from 'vis-timeline/standalone'
 type Group = { id: string; content: string; order: number; type: 'aircraft' | 'sim' }
 type Item = { id: string; group: string; start: Date; end: Date; title: string; content: string; status: 'Planned' | 'Authorized' | 'Canceled'; conflict?: boolean; notes?: string; tags?: string[] }
 
-export default function HomePage() {
+export default function PlanningPage() {
   const [view, setView] = useState<'day' | 'week'>('day')
   const [date, setDate] = useState(new Date())
   const [filters, setFilters] = useState({ showJets: true, showSims: true, search: '' })
   const store = useAppStore()
-  const [items, setItems] = useState<Item[]>(store.missions as any)
+  const [items, setItems] = useState<Item[]>(store.planningMissions as any)
   const [groups] = useState<Group[]>(store.groups as any)
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
   const [snack, setSnack] = useState({ open: false, message: '' })
@@ -70,18 +68,24 @@ export default function HomePage() {
     if (!containerRef.current || timeline.current) return
     dsGroups.current = new DataSet(groups as any)
     dsItems.current = new DataSet(visibleItems as any)
-    // Active schedule is read-only for layout changes. No move/resize handlers.
-    timeline.current = new Timeline(
-      containerRef.current,
-      dsItems.current as any,
-      dsGroups.current as any,
-      { ...buildVisOptions(view, date), editable: { add: false, remove: false, updateTime: false, updateGroup: false } }
-    )
+    timeline.current = new Timeline(containerRef.current, dsItems.current as any, dsGroups.current as any, buildVisOptions(view, date))
     timeline.current.on('doubleClick', (props: any) => {
       if (props.item && dsItems.current) setSelectedItem(dsItems.current.get(props.item as string) as Item)
     })
+    timeline.current.on('itemmoved', (ev: any) => {
+      const newGroup = ev?.data?.group || ev?.group
+      const updated = markConflicts(items.map((p) => (p.id === ev.item ? { ...p, start: ev.start, end: ev.end, group: newGroup || p.group } : p)))
+      setItems(updated)
+      store.updatePlanningMissionWindow(ev.item as string, ev.start, ev.end)
+      if (newGroup) store.updatePlanningMissionGroup(ev.item as string, newGroup)
+    })
+    timeline.current.on('itemresized', (ev: any) => {
+      const updated = markConflicts(items.map((p) => (p.id === ev.item ? { ...p, start: ev.start, end: ev.end } : p)))
+      setItems(updated)
+      store.updatePlanningMissionWindow(ev.item as string, ev.start, ev.end)
+    })
     timeline.current.on('rangechanged', (ev: any) => setDate(new Date(ev.start)))
-  }, [groups, visibleItems, view, date])
+  }, [groups, visibleItems, view, date, items, store])
 
   useEffect(() => {
     if (!timeline.current || !dsItems.current || !dsGroups.current) return
@@ -98,28 +102,25 @@ export default function HomePage() {
     timeline.current.setOptions(buildVisOptions(view, date))
   }, [groups, visibleItems, view, date])
 
-  function handleAuthorize(id: string) {
-    setItems((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'Authorized' } : p)))
-    store.updateMissionStatus(id, 'Authorized')
-    setSelectedItem(null)
-    setSnack({ open: true, message: 'Mission authorized' })
+  function handleAddTag(tagId: string) {
+    if (!selectedItem) return
+    store.addTagToPlanningMission(selectedItem.id, tagId)
+    setItems((prev) => prev.map((m) => (m.id === selectedItem.id ? { ...m, tags: Array.from(new Set([...(m.tags || []), tagId])) } : m)))
   }
-  function handleCancel(id: string) {
-    setItems((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'Canceled' } : p)))
-    store.updateMissionStatus(id, 'Canceled')
-    setSelectedItem(null)
-    setSnack({ open: true, message: 'Mission canceled' })
+  function handleRemoveTag(tagId: string) {
+    if (!selectedItem) return
+    store.removeTagFromPlanningMission(selectedItem.id, tagId)
+    setItems((prev) => prev.map((m) => (m.id === selectedItem.id ? { ...m, tags: (m.tags || []).filter((t) => t !== tagId) } : m)))
   }
 
-  const counts = useMemo(() => ({
-    planned: visibleItems.filter((i) => i.status === 'Planned').length,
-    auth: visibleItems.filter((i) => i.status === 'Authorized').length,
-    canceled: visibleItems.filter((i) => i.status === 'Canceled').length,
-  }), [visibleItems])
+  function handlePublishDay() {
+    store.publishPlanningToActive()
+    setSnack({ open: true, message: 'Planning published to Active' })
+  }
 
   return (
     <div style={{ display: 'grid', gridTemplateRows: 'auto 1fr', height: '100vh' }}>
-      <TopNav active="schedule" />
+      <TopNav active="planning" />
       <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr' }}>
         <div style={{ padding: 16, borderRight: '1px solid #243049', background: 'var(--panel)' }}>
           <Stack spacing={2}>
@@ -132,8 +133,8 @@ export default function HomePage() {
               InputProps={{ startAdornment: (<InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>) }}
             />
             <FormGroup>
-              <FormControlLabel control={<Switch checked={filters.showJets} onChange={(e) => setFilters((f) => ({ ...f, showJets: e.target.checked }))} />} label={<Stack direction="row" spacing={1} alignItems="center"><FlightIcon fontSize="small" /> <span>Show Aircraft</span></Stack>} />
-              <FormControlLabel control={<Switch checked={filters.showSims} onChange={(e) => setFilters((f) => ({ ...f, showSims: e.target.checked }))} />} label={<Stack direction="row" spacing={1} alignItems="center"><DeveloperBoardIcon fontSize="small" /> <span>Show Simulators</span></Stack>} />
+              <FormControlLabel control={<Switch checked={filters.showJets} onChange={(e) => setFilters((f) => ({ ...f, showJets: e.target.checked }))} />} label={<Stack direction="row" spacing={1} alignItems="center"><span>Show Aircraft</span></Stack>} />
+              <FormControlLabel control={<Switch checked={filters.showSims} onChange={(e) => setFilters((f) => ({ ...f, showSims: e.target.checked }))} />} label={<Stack direction="row" spacing={1} alignItems="center"><span>Show Simulators</span></Stack>} />
             </FormGroup>
             <Divider />
             <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'var(--muted)' }}>Date Range</Typography>
@@ -141,19 +142,14 @@ export default function HomePage() {
               <ToggleButton value="day">Day</ToggleButton>
               <ToggleButton value="week">Week</ToggleButton>
             </ToggleButtonGroup>
-            <Alert severity="info" variant="outlined">Double‑click a mission for details</Alert>
+            <Alert severity="info" variant="outlined">Drag missions to plan; add tags for context</Alert>
             <Divider />
-            <Stack direction="row" spacing={1}>
-              <Chip label={`Planned ${counts.planned}`} color="info" variant="outlined" size="small" />
-              <Chip label={`Authorized ${counts.auth}`} color="success" variant="outlined" size="small" />
-              <Chip label={`Canceled ${counts.canceled}`} color="warning" variant="outlined" size="small" />
-            </Stack>
+            <Legend />
           </Stack>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--panel-2)' }}>
           <div style={{ display: 'flex', gap: 8, padding: '12px 16px', borderBottom: '1px solid #243049', position: 'sticky', top: 0, zIndex: 2, background: 'var(--panel-2)' }}>
-            <Button variant="contained" startIcon={<PublishIcon />} onClick={() => setSnack({ open: true, message: 'Day published (demo)' })} sx={{ fontWeight: 700 }}>Publish Day</Button>
-            <Button variant="outlined" startIcon={<PictureAsPdfIcon />} onClick={() => setSnack({ open: true, message: 'Exported PDF (demo)' })} sx={{ fontWeight: 700 }}>Export PDF</Button>
+            <Button variant="contained" startIcon={<PublishIcon />} onClick={handlePublishDay} sx={{ fontWeight: 700 }}>Publish to Active</Button>
             <div style={{ flex: 1 }} />
             <Chip variant="outlined" label={labelForDate(date, view)} icon={<CalendarMonthIcon />} sx={{ fontWeight: 700 }} />
           </div>
@@ -166,9 +162,7 @@ export default function HomePage() {
       {selectedItem && (
         <Dialog open onClose={() => setSelectedItem(null)} maxWidth="sm" fullWidth>
           <DialogTitle>
-            Mission {selectedItem.title}
-            {selectedItem.status === 'Authorized' && <span style={{ marginLeft: 8, background: '#22c55e', color: '#05100a', padding: '2px 6px', borderRadius: 999, fontSize: 12 }}>Authorized</span>}
-            {selectedItem.status === 'Canceled' && <span style={{ marginLeft: 8, background: '#f59e0b', color: '#110a04', padding: '2px 6px', borderRadius: 999, fontSize: 12 }}>Canceled</span>}
+            Plan Mission {selectedItem.title}
           </DialogTitle>
           <DialogContent>
             <Stack spacing={1}>
@@ -176,11 +170,33 @@ export default function HomePage() {
               <Typography variant="body2" color="text.secondary">Start: {new Date(selectedItem.start).toLocaleString()}</Typography>
               <Typography variant="body2" color="text.secondary">End: {new Date(selectedItem.end).toLocaleString()}</Typography>
               <TextField label="Notes" multiline minRows={3} defaultValue={selectedItem.notes || ''} fullWidth />
+              <Divider sx={{ my: 1 }} />
+              <Typography variant="subtitle2">Tags</Typography>
+              <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+                {(selectedItem.tags || []).map((tid) => {
+                  const t = store.availableTags.find((x) => x.id === tid)
+                  if (!t) return null
+                  return (
+                    <Chip
+                      key={tid}
+                      label={
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          {t.icon && <i className={`fa-solid ${t.icon}`} style={{ color: t.color }} />}
+                          <span>{`${t.emoji || ''} ${t.label}`.trim()}</span>
+                        </span>
+                      }
+                      onDelete={() => handleRemoveTag(tid)}
+                      size="small"
+                      sx={{ background: `${t.color}22`, border: `1px solid ${t.color}`, color: t.color }}
+                    />
+                  )
+                })}
+                <TagPicker onPick={handleAddTag} />
+                <CreateTagButton onCreate={(tag) => selectedItem && handleAddTag(tag.id)} />
+              </Stack>
             </Stack>
           </DialogContent>
           <DialogActions>
-            {selectedItem.status !== 'Authorized' && <Button startIcon={<VerifiedUserIcon />} variant="contained" onClick={() => handleAuthorize(selectedItem.id)} sx={{ fontWeight: 700 }}>Authorize</Button>}
-            {selectedItem.status !== 'Canceled' && <Button color="error" startIcon={<CancelIcon />} onClick={() => handleCancel(selectedItem.id)} sx={{ fontWeight: 700 }}>Cancel Mission</Button>}
             <Button onClick={() => setSelectedItem(null)}>Close</Button>
           </DialogActions>
         </Dialog>
@@ -188,6 +204,81 @@ export default function HomePage() {
 
       <Snackbar open={snack.open} autoHideDuration={2500} onClose={() => setSnack({ open: false, message: '' })} message={snack.message} />
     </div>
+  )
+}
+
+function Legend() {
+  const { availableTags } = useAppStore()
+  return (
+    <Stack spacing={1}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'var(--muted)' }}>Legend</Typography>
+      <Stack spacing={1}>
+        {availableTags.map((t) => (
+          <Stack key={t.id} direction="row" spacing={1} alignItems="center">
+            <span style={{ width: 12, height: 12, borderRadius: 3, background: t.color }} />
+            <Typography variant="body2">{t.emoji ? `${t.emoji} ` : ''}{t.label}</Typography>
+          </Stack>
+        ))}
+      </Stack>
+    </Stack>
+  )
+}
+
+function TagPicker({ onPick }: { onPick: (tagId: string) => void }) {
+  const { availableTags } = useAppStore()
+  return (
+    <Stack direction="row" spacing={0.5}>
+      {availableTags.map((t) => (
+        <Tooltip key={t.id} title={t.label}>
+          <IconButton size="small" onClick={() => onPick(t.id)}>
+            {t.icon ? <i className={`fa-solid ${t.icon}`} style={{ color: t.color }} /> : <LabelIcon sx={{ color: t.color }} fontSize="small" />}
+          </IconButton>
+        </Tooltip>
+      ))}
+      <CreateTagButton onCreate={() => {}} />
+    </Stack>
+  )
+}
+
+function CreateTagButton({ onCreate }: { onCreate: (tag: any) => void }) {
+  const store = useAppStore()
+  const [open, setOpen] = useState(false)
+  const [label, setLabel] = useState('')
+  const [color, setColor] = useState('#7c3aed')
+  const [icon, setIcon] = useState('fa-star')
+  const [emoji, setEmoji] = useState('')
+  return (
+    <>
+      <Tooltip title="Create tag"><IconButton size="small" onClick={() => setOpen(true)}><AddIcon fontSize="small" /></IconButton></Tooltip>
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Create Tag</DialogTitle>
+        <DialogContent>
+          <Stack spacing={1} sx={{ mt: 1 }}>
+            <TextField size="small" label="Label" value={label} onChange={(e) => setLabel(e.target.value)} autoFocus />
+            <Stack direction="row" spacing={1} alignItems="center">
+              <ColorizeIcon fontSize="small" />
+              <TextField size="small" label="Color" type="color" value={color} onChange={(e) => setColor((e.target as any).value)} sx={{ width: 120 }} />
+              <Box sx={{ ml: 'auto', display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                <i className={`fa-solid ${icon}`} style={{ color }} />
+              </Box>
+            </Stack>
+            <TextField size="small" label="Font Awesome icon class (e.g., fa-plane, fa-flag)" value={icon} onChange={(e) => setIcon(e.target.value)} />
+            <TextField size="small" label="Emoji (optional)" value={emoji} onChange={(e) => setEmoji(e.target.value)} />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={() => {
+            if (!label.trim()) return
+            const tag = store.createTag(label.trim(), color, icon.trim() || undefined, emoji.trim() || undefined)
+            onCreate(tag)
+            setOpen(false)
+            setLabel('')
+            setEmoji('')
+          }}>Create</Button>
+        </DialogActions>
+      </Dialog>
+    </>
   )
 }
 
@@ -254,10 +345,10 @@ function renderContent(it: Item, availableTags: any[]) {
     const t = availableTags.find((x: any) => x.id === tid)
     if (!t) return ''
     const label = `${t.emoji || ''}`.trim()
-    return `<span class=\"tag-pill\" style=\"color:${t.color}\">${label || '•'}</span>`
+    return `<span class="tag-pill" style="color:${t.color}">${label || '•'}</span>`
   }).join('')
   const safeTitle = escapeHtml(it.title)
-  return `${tags}<span style=\"margin-left:6px\">${safeTitle}</span>`
+  return `${tags}<span style="margin-left:6px">${safeTitle}</span>`
 }
 
 function buildHoverTitle(it: Item, availableTags: any[]) {
@@ -272,28 +363,6 @@ function escapeHtml(text: string) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-}
-
-function demoGroups(): Group[] {
-  return [
-    { id: 'AC-101', content: 'Aircraft 101', order: 1, type: 'aircraft' },
-    { id: 'AC-202', content: 'Aircraft 202', order: 2, type: 'aircraft' },
-    { id: 'SIM-A', content: 'Simulator A', order: 3, type: 'sim' },
-    { id: 'SIM-B', content: 'Simulator B', order: 4, type: 'sim' },
-  ]
-}
-
-function demoItems(baseDate: Date): Item[] {
-  const d = (h: number, m: number) => new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), h, m, 0, 0)
-  const items: Item[] = [
-    { id: 'M1', group: 'AC-101', start: d(8, 0), end: d(10, 0), title: 'Instrument 1', content: 'Instrument 1', status: 'Planned' },
-    { id: 'M2', group: 'AC-101', start: d(10, 30), end: d(12, 0), title: 'Formation 1', content: 'Formation 1', status: 'Planned' },
-    { id: 'M3', group: 'AC-202', start: d(9, 0), end: d(11, 30), title: 'Nav 2', content: 'Nav 2', status: 'Planned' },
-    { id: 'M4', group: 'SIM-A', start: d(13, 0), end: d(14, 30), title: 'Sim Check', content: 'Sim Check', status: 'Authorized' },
-    { id: 'M5', group: 'SIM-B', start: d(9, 30), end: d(11, 0), title: 'Basic Instruments', content: 'Basic Instruments', status: 'Planned' },
-    { id: 'M6', group: 'AC-202', start: d(12, 0), end: d(13, 0), title: 'Pattern', content: 'Pattern', status: 'Canceled' },
-  ]
-  return markConflicts(items)
 }
 
 

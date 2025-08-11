@@ -16,6 +16,7 @@ import { useAppStore } from '../state/store'
 type TopNavProps = {
   active?:
     | 'schedule'
+    | 'planning'
     | 'crew'
     | 'authorization'
     | 'training'
@@ -51,6 +52,9 @@ export default function TopNav({ active = 'schedule' }: TopNavProps) {
           VectorWing
         </Typography>
         <Stack direction="row" spacing={1} alignItems="center">
+          <Button component={Link} href="/planning" startIcon={<CalendarMonthIcon />} sx={linkSx('planning')}>
+            Planning
+          </Button>
           <Button component={Link} href="/" startIcon={<CalendarMonthIcon />} sx={linkSx('schedule')}>
             Schedule
             <Chip size="small" label={`${planned}/${authorized}`} sx={{ ml: 1 }} />

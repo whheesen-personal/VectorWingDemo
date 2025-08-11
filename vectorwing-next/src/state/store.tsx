@@ -4,6 +4,7 @@ import React, { createContext, useContext, useMemo, useState } from 'react'
 
 export type Group = { id: string; content: string; order: number; type: 'aircraft' | 'sim' }
 export type MissionStatus = 'Planned' | 'Authorized' | 'Canceled'
+export type MissionTag = { id: string; label: string; color: string; emoji?: string; icon?: string }
 export type MissionItem = {
   id: string
   group: string
@@ -14,6 +15,7 @@ export type MissionItem = {
   status: MissionStatus
   conflict?: boolean
   notes?: string
+  tags?: string[] // mission tag ids
 }
 
 export type Crew = { id: string; name: string; role: 'Student' | 'Instructor'; rank: string; aircraft: string; quals: string[]; status: 'Available' | 'On Leave' | 'DNIF' }
@@ -25,15 +27,23 @@ export type Simulator = { name: string; status: string; notes: string }
 type AppStore = {
   groups: Group[]
   missions: MissionItem[]
+  planningMissions: MissionItem[]
   crew: Crew[]
   students: Student[]
   notifications: NotificationItem[]
   aircraft: Aircraft[]
   simulators: Simulator[]
+  availableTags: MissionTag[]
   updateMissionStatus: (id: string, status: MissionStatus) => void
   updateMissionWindow: (id: string, start: Date, end: Date) => void
+  updatePlanningMissionWindow: (id: string, start: Date, end: Date) => void
+  updatePlanningMissionGroup: (id: string, group: string) => void
+  addTagToPlanningMission: (id: string, tagId: string) => void
+  removeTagFromPlanningMission: (id: string, tagId: string) => void
+  publishPlanningToActive: () => void
   addNotification: (n: NotificationItem) => void
   markAllNotificationsRead: () => void
+  createTag: (label: string, color: string, icon?: string, emoji?: string) => MissionTag
 }
 
 const AppStoreContext = createContext<AppStore | null>(null)
@@ -47,13 +57,20 @@ function buildDemo() {
     { id: 'SIM-A', content: 'Simulator A', order: 3, type: 'sim' },
     { id: 'SIM-B', content: 'Simulator B', order: 4, type: 'sim' },
   ]
+  const availableTags: MissionTag[] = [
+    { id: 'night', label: 'Night', color: '#7c3aed', emoji: '🌙' },
+    { id: 'checkride', label: 'Checkride', color: '#f59e0b', emoji: '🛡️' },
+    { id: 'highRisk', label: 'High Risk', color: '#ef4444', emoji: '⚠️' },
+    { id: 'sim', label: 'Simulator', color: '#0ea5e9', emoji: '🕹️' },
+    { id: 'ipReq', label: 'IP Required', color: '#22c55e', emoji: '🎯' },
+  ]
   const missions: MissionItem[] = [
-    { id: 'M1', group: 'AC-101', start: d(8, 0), end: d(10, 0), title: 'Instrument 1', content: 'Instrument 1', status: 'Planned' },
-    { id: 'M2', group: 'AC-101', start: d(10, 30), end: d(12, 0), title: 'Formation 1', content: 'Formation 1', status: 'Planned' },
+    { id: 'M1', group: 'AC-101', start: d(8, 0), end: d(10, 0), title: 'Instrument 1', content: 'Instrument 1', status: 'Planned', tags: ['ipReq'] },
+    { id: 'M2', group: 'AC-101', start: d(10, 30), end: d(12, 0), title: 'Formation 1', content: 'Formation 1', status: 'Planned', tags: ['highRisk'] },
     { id: 'M3', group: 'AC-202', start: d(9, 0), end: d(11, 30), title: 'Nav 2', content: 'Nav 2', status: 'Planned' },
-    { id: 'M4', group: 'SIM-A', start: d(13, 0), end: d(14, 30), title: 'Sim Check', content: 'Sim Check', status: 'Authorized' },
-    { id: 'M5', group: 'SIM-B', start: d(9, 30), end: d(11, 0), title: 'Basic Instruments', content: 'Basic Instruments', status: 'Planned' },
-    { id: 'M6', group: 'AC-202', start: d(12, 0), end: d(13, 0), title: 'Pattern', content: 'Pattern', status: 'Canceled' },
+    { id: 'M4', group: 'SIM-A', start: d(13, 0), end: d(14, 30), title: 'Sim Check', content: 'Sim Check', status: 'Authorized', tags: ['sim'] },
+    { id: 'M5', group: 'SIM-B', start: d(9, 30), end: d(11, 0), title: 'Basic Instruments', content: 'Basic Instruments', status: 'Planned', tags: ['sim'] },
+    { id: 'M6', group: 'AC-202', start: d(12, 0), end: d(13, 0), title: 'Pattern', content: 'Pattern', status: 'Canceled', tags: ['night'] },
   ]
   const crew: Crew[] = [
     { id: '1', name: 'Capt Alex Hunter', role: 'Instructor', rank: 'O-3', aircraft: 'T-6', quals: ['IP', 'IFR'], status: 'Available' },
@@ -77,13 +94,17 @@ function buildDemo() {
     { name: 'SIM-A', status: 'Available', notes: 'Bay 1' },
     { name: 'SIM-B', status: 'Available', notes: 'Bay 2' },
   ]
-  return { groups, missions, crew, students, notifications, aircraft, simulators }
+  // Start planning with a copy of missions (staging area)
+  const planningMissions: MissionItem[] = missions.map((m) => ({ ...m }))
+  return { groups, missions, planningMissions, crew, students, notifications, aircraft, simulators, availableTags }
 }
 
 export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   const demo = useMemo(buildDemo, [])
   const [missions, setMissions] = useState<MissionItem[]>(demo.missions)
+  const [planningMissions, setPlanningMissions] = useState<MissionItem[]>(demo.planningMissions)
   const [notifications, setNotifications] = useState<NotificationItem[]>(demo.notifications)
+  const [availableTags, setAvailableTags] = useState<MissionTag[]>(demo.availableTags)
 
   const value: AppStore = {
     groups: demo.groups,
@@ -91,12 +112,25 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     students: demo.students,
     aircraft: demo.aircraft,
     simulators: demo.simulators,
+    availableTags,
     missions,
+    planningMissions,
     notifications,
     updateMissionStatus: (id, status) => setMissions((prev) => prev.map((m) => (m.id === id ? { ...m, status } : m))),
     updateMissionWindow: (id, start, end) => setMissions((prev) => prev.map((m) => (m.id === id ? { ...m, start, end } : m))),
+    updatePlanningMissionWindow: (id, start, end) => setPlanningMissions((prev) => prev.map((m) => (m.id === id ? { ...m, start, end } : m))),
+    updatePlanningMissionGroup: (id, group) => setPlanningMissions((prev) => prev.map((m) => (m.id === id ? { ...m, group } : m))),
+    addTagToPlanningMission: (id, tagId) => setPlanningMissions((prev) => prev.map((m) => (m.id === id ? { ...m, tags: Array.from(new Set([...(m.tags || []), tagId])) } : m))),
+    removeTagFromPlanningMission: (id, tagId) => setPlanningMissions((prev) => prev.map((m) => (m.id === id ? { ...m, tags: (m.tags || []).filter((t) => t !== tagId) } : m))),
+    publishPlanningToActive: () => setMissions(() => planningMissions.map((m) => ({ ...m, status: m.status === 'Canceled' ? 'Canceled' : 'Planned' }))),
     addNotification: (n) => setNotifications((p) => [n, ...p]),
     markAllNotificationsRead: () => setNotifications((p) => p.map((n) => ({ ...n, read: true }))),
+    createTag: (label: string, color: string, icon?: string, emoji?: string) => {
+      const id = label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `tag-${Date.now()}`
+      const tag: MissionTag = { id, label, color, icon, emoji }
+      setAvailableTags((prev) => [...prev, tag])
+      return tag
+    },
   }
 
   return <AppStoreContext.Provider value={value}>{children}</AppStoreContext.Provider>
