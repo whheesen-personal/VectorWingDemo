@@ -5,6 +5,7 @@ import React, { createContext, useContext, useMemo, useState } from 'react'
 export type Group = { id: string; content: string; order: number; type: 'aircraft' | 'sim' }
 export type MissionStatus = 'Planned' | 'Authorized' | 'Canceled'
 export type MissionTag = { id: string; label: string; color: string; emoji?: string; icon?: string }
+
 export type MissionItem = {
   id: string
   group: string
@@ -94,7 +95,6 @@ function buildDemo() {
     { name: 'SIM-A', status: 'Available', notes: 'Bay 1' },
     { name: 'SIM-B', status: 'Available', notes: 'Bay 2' },
   ]
-  // Start planning with a copy of missions (staging area)
   const planningMissions: MissionItem[] = missions.map((m) => ({ ...m }))
   return { groups, missions, planningMissions, crew, students, notifications, aircraft, simulators, availableTags }
 }

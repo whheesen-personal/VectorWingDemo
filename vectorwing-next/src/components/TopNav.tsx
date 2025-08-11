@@ -1,5 +1,6 @@
 'use client'
 
+import * as React from 'react'
 import Link from 'next/link'
 import { AppBar, Toolbar, Typography, Stack, Button, Chip, Box, Badge } from '@mui/material'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
@@ -10,7 +11,7 @@ import NotificationsIcon from '@mui/icons-material/Notifications'
 import AssessmentIcon from '@mui/icons-material/Assessment'
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing'
 import SettingsIcon from '@mui/icons-material/Settings'
-import CircleIcon from '@mui/icons-material/Circle'
+import RateReviewIcon from '@mui/icons-material/RateReview'
 import { useAppStore } from '../state/store'
 
 type TopNavProps = {
@@ -25,6 +26,7 @@ type TopNavProps = {
     | 'repeater'
     | 'resources'
     | 'admin'
+    | 'feedback'
 }
 
 export default function TopNav({ active = 'schedule' }: TopNavProps) {
@@ -98,6 +100,9 @@ export default function TopNav({ active = 'schedule' }: TopNavProps) {
           <Button component={Link} href="/reporting" startIcon={<AssessmentIcon />} sx={linkSx('reporting')}>
             Reporting
           </Button>
+          <Button component={Link} href="/feedback" startIcon={<RateReviewIcon />} sx={linkSx('feedback')}>
+            Feedback
+          </Button>
           <Button component={Link} href="/repeater" startIcon={<AssessmentIcon />} sx={linkSx('repeater')}>
             Repeater Screen
           </Button>
@@ -114,5 +119,3 @@ export default function TopNav({ active = 'schedule' }: TopNavProps) {
     </AppBar>
   )
 }
-
-

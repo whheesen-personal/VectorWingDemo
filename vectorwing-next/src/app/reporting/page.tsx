@@ -4,6 +4,7 @@ import TopNav from '../../components/TopNav'
 import { Box, Container, Grid, Card, CardContent, Typography, Stack, Button, TextField } from '@mui/material'
 import AssessmentIcon from '@mui/icons-material/Assessment'
 import { KpiStatCard, KpiTrendCard, ProgressDistributionCard, CancelReasonsCard } from '../../components/KpiCharts'
+import Link from 'next/link'
 
 export default function ReportingPage() {
   return (
@@ -35,6 +36,7 @@ export default function ReportingPage() {
                   <TextField size="small" label="Custom report query" placeholder="e.g., Canceled flights last 30 days by reason" fullWidth />
                   <Button variant="outlined">Run</Button>
                   <Button variant="contained">Export CSV</Button>
+                  <Button variant="contained" component={Link} href="/reporting/mission-feedback">Mission Feedback Report</Button>
                 </Stack>
               </CardContent>
             </Card>
