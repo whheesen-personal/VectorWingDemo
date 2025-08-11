@@ -6,8 +6,8 @@
     "dev": "next dev --port 3000",
     "build": "next build",
     "start": "next start -p 3000",
-    "preview": "next build && next start -p 3000",
-    "export": "next build && next export",
+    "preview": "next build ; npx --yes serve -s out -l 5000",
+    "export": "next build",
     "serve": "serve -s out -l 5000",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck"

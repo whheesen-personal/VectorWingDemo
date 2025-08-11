@@ -9,6 +9,7 @@ import VerifiedUserIcon from '@mui/icons-material/VerifiedUser'
 import SchoolIcon from '@mui/icons-material/School'
 import NotificationsIcon from '@mui/icons-material/Notifications'
 import AssessmentIcon from '@mui/icons-material/Assessment'
+import CloudIcon from '@mui/icons-material/Cloud'
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing'
 import SettingsIcon from '@mui/icons-material/Settings'
 import RateReviewIcon from '@mui/icons-material/RateReview'
@@ -24,6 +25,7 @@ type TopNavProps = {
     | 'notifications'
     | 'reporting'
     | 'repeater'
+    | 'weather'
     | 'resources'
     | 'admin'
     | 'feedback'
@@ -99,6 +101,9 @@ export default function TopNav({ active = 'schedule' }: TopNavProps) {
           )}
           <Button component={Link} href="/reporting" startIcon={<AssessmentIcon />} sx={linkSx('reporting')}>
             Reporting
+          </Button>
+          <Button component={Link} href="/weather" startIcon={<CloudIcon />} sx={linkSx('weather')}>
+            Weather
           </Button>
           <Button component={Link} href="/feedback" startIcon={<RateReviewIcon />} sx={linkSx('feedback')}>
             Feedback
