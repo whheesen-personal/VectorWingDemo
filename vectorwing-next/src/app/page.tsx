@@ -60,19 +60,8 @@ export default function HomePage() {
 
   // Function to render item content as HTML string (simple approach like before)
   const renderContent = useCallback((it: Item, availableTags: any[]) => {
-    const tags = (it.tags || []).map((tid) => {
-      const t = availableTags.find((x: any) => x.id === tid)
-      if (!t) return ''
-      const iconPath = t.icon || ''
-      if (iconPath && iconPath.startsWith('/assets/')) {
-        return `<span class="tag-pill" style="color:${t.color}"><img src="${iconPath}" width="12" height="12" style="filter: brightness(0) saturate(100%) invert(1);" /></span>`
-      }
-      const symbol = t.symbol || t.emoji || '•'
-      return `<span class="tag-pill" style="color:${t.color}">${symbol}</span>`
-    }).join('')
-    
     const safeTitle = escapeHtml(it.title)
-    return `${tags}<span style="margin-left:6px;font-weight:700;color:white">${safeTitle}</span>`
+    return `<span style="font-weight:700;color:white">${safeTitle}</span>`
   }, [])
 
   const visibleItems = useMemo(() => {
@@ -331,10 +320,7 @@ function renderReactContent(node: React.ReactNode) {
 }
 
 function buildHoverTitle(it: Item, availableTags: any[]) {
-  const names = (it.tags || [])
-    .map((tid) => availableTags.find((t: any) => t.id === tid)?.label)
-    .filter(Boolean)
-  return names.length ? `Tags: ${names.join(', ')}` : it.title
+  return it.title
 }
 
 function escapeHtml(text: string) {

@@ -300,11 +300,6 @@ function Legend({ onUploadIcon, onCreateTag }: { onUploadIcon: () => void; onCre
         {store.availableTags.map((t) => (
           <Stack key={t.id} direction="row" spacing={1} alignItems="center">
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flex: 1 }}>
-              {t.icon && t.icon.startsWith('/assets/') ? (
-                <img src={t.icon} alt={t.label} style={{ width: 16, height: 16, filter: 'brightness(0) saturate(100%) invert(1)' }} />
-              ) : (
-                <i className={`fa-solid ${t.icon || 'fa-tag'}`} style={{ color: t.color }} />
-              )}
               <Typography variant="body2">{t.label}</Typography>
             </span>
             <Tooltip title="Edit"><IconButton size="small" onClick={() => startEdit(t.id)}><EditIcon fontSize="inherit" /></IconButton></Tooltip>
@@ -337,13 +332,6 @@ function Legend({ onUploadIcon, onCreateTag }: { onUploadIcon: () => void; onCre
             <Stack direction="row" spacing={1} alignItems="center">
               <Typography variant="body2" sx={{ minWidth: 40 }}>Color:</Typography>
               <TextField size="small" label="Color" type="color" value={draft.color} onChange={(e) => setDraft((d) => ({ ...d, color: (e.target as any).value }))} sx={{ width: 120 }} />
-              <Box sx={{ ml: 'auto', display: 'inline-flex', alignItems: 'center', gap: 1 }}>
-                {draft.icon && draft.icon.startsWith('/assets/') ? (
-                  <img src={draft.icon} alt={draft.label} style={{ width: 16, height: 16 }} />
-                ) : (
-                  <i className={`fa-solid ${draft.icon}`} style={{ color: draft.color }} />
-                )}
-              </Box>
             </Stack>
             <TextField size="small" label="Font Awesome class" value={draft.icon} onChange={(e) => setDraft((d) => ({ ...d, icon: e.target.value }))} />
             <TextField size="small" label="Emoji" value={draft.emoji} onChange={(e) => setDraft((d) => ({ ...d, emoji: e.target.value }))} />
@@ -404,11 +392,6 @@ function TagPicker({ onPick }: { onPick: (tagId: string) => void }) {
                   sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    {t.icon && t.icon.startsWith('/assets/') ? (
-                      <img src={t.icon} alt={t.label} style={{ width: 16, height: 16, filter: 'brightness(0) saturate(100%) invert(1)' }} />
-                    ) : (
-                      <i className={`fa-solid ${t.icon || 'fa-tag'}`} style={{ color: t.color }} />
-                    )}
                     <span>{t.label}</span>
                   </span>
                 </Button>
@@ -484,25 +467,12 @@ function markConflicts(items: Item[]) {
 }
 
 function renderContent(it: Item, availableTags: any[]) {
-  const tags = (it.tags || []).map((tid) => {
-    const t = availableTags.find((x: any) => x.id === tid)
-    if (!t) return ''
-    const iconPath = t.icon || ''
-    if (iconPath && iconPath.startsWith('/assets/')) {
-      return `<span class="tag-pill" style="color:${t.color}"><img src="${iconPath}" width="12" height="12" style="filter: brightness(0) saturate(100%) invert(1);" /></span>`
-    }
-    const symbol = t.symbol || t.emoji || '•'
-    return `<span class="tag-pill" style="color:${t.color}">${symbol}</span>`
-  }).join('')
   const safeTitle = escapeHtml(it.title)
-  return `${tags}<span style="margin-left:6px;font-weight:700;color:white">${safeTitle}</span>`
+  return `<span style="font-weight:700;color:white">${safeTitle}</span>`
 }
 
 function buildHoverTitle(it: Item, availableTags: any[]) {
-  const names = (it.tags || [])
-    .map((tid) => availableTags.find((t: any) => t.id === tid)?.label)
-    .filter(Boolean)
-  return names.length ? `Tags: ${names.join(', ')}` : it.title
+  return it.title
 }
 
 function escapeHtml(text: string) {
