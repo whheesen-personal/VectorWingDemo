@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import {
   Typography,
   Chip,
@@ -20,6 +20,7 @@ import {
   DialogActions,
   TextField,
   InputAdornment,
+  Checkbox,
   TextFieldProps,
   Box,
   Tooltip,
@@ -33,7 +34,9 @@ import SearchIcon from '@mui/icons-material/Search'
 import FlightIcon from '@mui/icons-material/Flight'
 import DeveloperBoardIcon from '@mui/icons-material/DeveloperBoard'
 import TopNav from '../components/TopNav'
+import TagTile from '../components/TagTile'
 import { useAppStore } from '../state/store'
+import { TagPicker as TagPickerComp, CreateTagButton as CreateTagButtonComp } from '../components/TagControls'
 
 import { DataSet } from 'vis-data'
 import { Timeline } from 'vis-timeline/standalone'
@@ -55,6 +58,23 @@ export default function HomePage() {
   const dsItems = useRef<DataSet<Item> | null>(null)
   const dsGroups = useRef<DataSet<Group> | null>(null)
 
+  // Function to render item content as HTML string (simple approach like before)
+  const renderContent = useCallback((it: Item, availableTags: any[]) => {
+    const tags = (it.tags || []).map((tid) => {
+      const t = availableTags.find((x: any) => x.id === tid)
+      if (!t) return ''
+      const iconPath = t.icon || ''
+      if (iconPath && iconPath.startsWith('/assets/')) {
+        return `<span class="tag-pill" style="color:${t.color}"><img src="${iconPath}" width="12" height="12" style="filter: brightness(0) saturate(100%) invert(1);" /></span>`
+      }
+      const symbol = t.symbol || t.emoji || '•'
+      return `<span class="tag-pill" style="color:${t.color}">${symbol}</span>`
+    }).join('')
+    
+    const safeTitle = escapeHtml(it.title)
+    return `${tags}<span style="margin-left:6px;font-weight:700;color:white">${safeTitle}</span>`
+  }, [])
+
   const visibleItems = useMemo(() => {
     return items.filter((it) => {
       const g = groups.find((g) => g.id === it.group)
@@ -69,34 +89,48 @@ export default function HomePage() {
   useEffect(() => {
     if (!containerRef.current || timeline.current) return
     dsGroups.current = new DataSet(groups as any)
-    dsItems.current = new DataSet(visibleItems as any)
+    
+    // Prepare items with content BEFORE adding to timeline
+    const itemsWithContent = visibleItems.map((it) => ({
+      ...it,
+      content: renderContent(it, store.availableTags as any),
+      className: `status-${it.status}${it.conflict ? ' conflict' : ''}`,
+      title: buildHoverTitle(it, store.availableTags as any),
+    }))
+    
+    dsItems.current = new DataSet(itemsWithContent as any)
     // Active schedule is read-only for layout changes. No move/resize handlers.
     timeline.current = new Timeline(
       containerRef.current,
       dsItems.current as any,
       dsGroups.current as any,
-      { ...buildVisOptions(view, date), editable: { add: false, remove: false, updateTime: false, updateGroup: false } }
+      { 
+        ...buildVisOptions(view, date), 
+        editable: { add: false, remove: false, updateTime: false, updateGroup: false }
+      } as any
     )
     timeline.current.on('doubleClick', (props: any) => {
       if (props.item && dsItems.current) setSelectedItem(dsItems.current.get(props.item as string) as Item)
     })
     timeline.current.on('rangechanged', (ev: any) => setDate(new Date(ev.start)))
-  }, [groups, visibleItems, view, date])
+  }, [groups, visibleItems, view, date, renderContent, buildHoverTitle])
 
   useEffect(() => {
     if (!timeline.current || !dsItems.current || !dsGroups.current) return
     dsGroups.current.update(groups as any)
+    
+    // Clear and re-add items with updated content
     dsItems.current.clear()
-    dsItems.current.add(
-      visibleItems.map((it) => ({
-        ...it,
-        className: `status-${it.status}${it.conflict ? ' conflict' : ''}`,
-        content: renderContent(it, store.availableTags as any),
-        title: buildHoverTitle(it, store.availableTags as any),
-      })) as any
-    )
+    const itemsWithContent = visibleItems.map((it) => ({
+      ...it,
+      content: renderContent(it, store.availableTags as any),
+      className: `status-${it.status}${it.conflict ? ' conflict' : ''}`,
+      title: buildHoverTitle(it, store.availableTags as any),
+    }))
+    dsItems.current.add(itemsWithContent as any)
+    
     timeline.current.setOptions(buildVisOptions(view, date))
-  }, [groups, visibleItems, view, date])
+  }, [groups, visibleItems, view, date, store.availableTags, renderContent, buildHoverTitle])
 
   function handleAuthorize(id: string) {
     setItems((prev) => prev.map((p) => (p.id === id ? { ...p, status: 'Authorized' } : p)))
@@ -109,6 +143,18 @@ export default function HomePage() {
     store.updateMissionStatus(id, 'Canceled')
     setSelectedItem(null)
     setSnack({ open: true, message: 'Mission canceled' })
+  }
+  function handleAddTag(tagId: string) {
+    if (!selectedItem) return
+    store.addTagToMission(selectedItem.id, tagId)
+    setItems((prev) => prev.map((m) => (m.id === selectedItem.id ? { ...m, tags: Array.from(new Set([...(m.tags || []), tagId])) } : m)))
+    setSelectedItem((prev) => (prev ? { ...prev, tags: Array.from(new Set([...(prev.tags || []), tagId])) } : prev))
+  }
+  function handleRemoveTag(tagId: string) {
+    if (!selectedItem) return
+    store.removeTagFromMission(selectedItem.id, tagId)
+    setItems((prev) => prev.map((m) => (m.id === selectedItem.id ? { ...m, tags: (m.tags || []).filter((t) => t !== tagId) } : m)))
+    setSelectedItem((prev) => (prev ? { ...prev, tags: (prev.tags || []).filter((t) => t !== tagId) } : prev))
   }
 
   const counts = useMemo(() => ({
@@ -164,8 +210,16 @@ export default function HomePage() {
       </div>
 
       {selectedItem && (
-        <Dialog open onClose={() => setSelectedItem(null)} maxWidth="sm" fullWidth>
-          <DialogTitle>
+        <Dialog 
+          open 
+          onClose={() => setSelectedItem(null)} 
+          maxWidth="sm" 
+          fullWidth
+          aria-labelledby="mission-dialog-title"
+          disablePortal={false}
+          keepMounted={false}
+        >
+          <DialogTitle id="mission-dialog-title">
             Mission {selectedItem.title}
             {selectedItem.status === 'Authorized' && <span style={{ marginLeft: 8, background: '#22c55e', color: '#05100a', padding: '2px 6px', borderRadius: 999, fontSize: 12 }}>Authorized</span>}
             {selectedItem.status === 'Canceled' && <span style={{ marginLeft: 8, background: '#f59e0b', color: '#110a04', padding: '2px 6px', borderRadius: 999, fontSize: 12 }}>Canceled</span>}
@@ -176,6 +230,28 @@ export default function HomePage() {
               <Typography variant="body2" color="text.secondary">Start: {new Date(selectedItem.start).toLocaleString()}</Typography>
               <Typography variant="body2" color="text.secondary">End: {new Date(selectedItem.end).toLocaleString()}</Typography>
               <TextField label="Notes" multiline minRows={3} defaultValue={selectedItem.notes || ''} fullWidth />
+              <Typography variant="subtitle2">Tags</Typography>
+              <FormGroup>
+                {store.availableTags.map((t) => {
+                  const checked = (selectedItem.tags || []).includes(t.id)
+                  return (
+                    <FormControlLabel
+                      key={t.id}
+                      control={<Checkbox checked={checked} onChange={(e) => e.target.checked ? handleAddTag(t.id) : handleRemoveTag(t.id)} />}
+                      label={
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                          {t.icon && t.icon.startsWith('/assets/') ? (
+                            <img src={t.icon} alt={t.label} style={{ width: 16, height: 16, filter: 'brightness(0) saturate(100%) invert(1)' }} />
+                          ) : (
+                            <i className={`fa-solid ${t.icon || 'fa-tag'}`} style={{ color: t.color }} />
+                          )}
+                          <span>{t.label}</span>
+                        </span>
+                      }
+                    />
+                  )
+                })}
+              </FormGroup>
             </Stack>
           </DialogContent>
           <DialogActions>
@@ -249,15 +325,9 @@ function markConflicts(items: Item[]) {
   return items.map((it) => ({ ...it, conflict: items.some((other) => overlaps(it, other)) }))
 }
 
-function renderContent(it: Item, availableTags: any[]) {
-  const tags = (it.tags || []).map((tid) => {
-    const t = availableTags.find((x: any) => x.id === tid)
-    if (!t) return ''
-    const label = `${t.emoji || ''}`.trim()
-    return `<span class=\"tag-pill\" style=\"color:${t.color}\">${label || '•'}</span>`
-  }).join('')
-  const safeTitle = escapeHtml(it.title)
-  return `${tags}<span style=\"margin-left:6px\">${safeTitle}</span>`
+function renderReactContent(node: React.ReactNode) {
+  const { renderToStaticMarkup } = require('react-dom/server')
+  return renderToStaticMarkup(node as any)
 }
 
 function buildHoverTitle(it: Item, availableTags: any[]) {

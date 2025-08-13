@@ -32,14 +32,70 @@ import SchoolIcon from '@mui/icons-material/School'
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn'
 
 const students = [
-  { name: 'Lt Sam Lee', phase: 'Instruments', progress: 45, alerts: ['IFR check due in 14 days'] },
-  { name: 'Lt Maria Gomez', phase: 'Contact', progress: 20, alerts: [] },
-  { name: 'Lt Alex Chen', phase: 'Instruments', progress: 62, alerts: [] },
-  { name: 'Lt Priya Singh', phase: 'Contact', progress: 38, alerts: ['Contact check in 10 days'] },
-  { name: "Lt James O'Neil", phase: 'Instruments', progress: 12, alerts: [] },
-  { name: 'Lt Sofia Rossi', phase: 'Contact', progress: 55, alerts: [] },
-  { name: 'Lt David Kim', phase: 'Instruments', progress: 27, alerts: [] },
-  { name: 'Lt Anna Kowalski', phase: 'Contact', progress: 47, alerts: [] },
+  { 
+    name: 'Lt Sam Lee', 
+    phase: 'Instruments', 
+    progress: 45, 
+    alerts: ['IFR check due in 14 days'],
+    estimatedDaysRemaining: 28,
+    modulesRemaining: ['IF5', 'IF6', 'IF7', 'IF8', 'IF9', 'IF10', 'IF11', 'IF12']
+  },
+  { 
+    name: 'Lt Maria Gomez', 
+    phase: 'Contact', 
+    progress: 20, 
+    alerts: [],
+    estimatedDaysRemaining: 42,
+    modulesRemaining: ['CT3', 'CT4', 'CT5', 'CT6', 'CT7', 'CT8', 'CT9', 'CT10']
+  },
+  { 
+    name: 'Lt Alex Chen', 
+    phase: 'Instruments', 
+    progress: 62, 
+    alerts: [],
+    estimatedDaysRemaining: 18,
+    modulesRemaining: ['IF8', 'IF9', 'IF10', 'IF11', 'IF12']
+  },
+  { 
+    name: 'Lt Priya Singh', 
+    phase: 'Contact', 
+    progress: 38, 
+    alerts: ['Contact check in 10 days'],
+    estimatedDaysRemaining: 35,
+    modulesRemaining: ['CT5', 'CT6', 'CT7', 'CT8', 'CT9', 'CT10']
+  },
+  { 
+    name: "Lt James O'Neil", 
+    phase: 'Instruments', 
+    progress: 12, 
+    alerts: [],
+    estimatedDaysRemaining: 56,
+    modulesRemaining: ['IF2', 'IF3', 'IF4', 'IF5', 'IF6', 'IF7', 'IF8', 'IF9', 'IF10', 'IF11', 'IF12']
+  },
+  { 
+    name: 'Lt Sofia Rossi', 
+    phase: 'Contact', 
+    progress: 55, 
+    alerts: [],
+    estimatedDaysRemaining: 25,
+    modulesRemaining: ['CT7', 'CT8', 'CT9', 'CT10']
+  },
+  { 
+    name: 'Lt David Kim', 
+    phase: 'Instruments', 
+    progress: 27, 
+    alerts: [],
+    estimatedDaysRemaining: 48,
+    modulesRemaining: ['IF4', 'IF5', 'IF6', 'IF7', 'IF8', 'IF9', 'IF10', 'IF11', 'IF12']
+  },
+  { 
+    name: 'Lt Anna Kowalski', 
+    phase: 'Contact', 
+    progress: 47, 
+    alerts: [],
+    estimatedDaysRemaining: 30,
+    modulesRemaining: ['CT6', 'CT7', 'CT8', 'CT9', 'CT10']
+  },
 ]
 
 export default function TrainingPage() {
@@ -181,12 +237,40 @@ export default function TrainingPage() {
                               <Chip label={s.phase} size="small" />
                             </Stack>
                             <LinearProgress variant="determinate" value={s.progress} />
-                            <Stack direction="row" spacing={1}>
+                            <Stack direction="row" spacing={1} alignItems="center">
                               <Chip label={`Progress ${s.progress}%`} size="small" color="info" />
-                              {s.alerts.map((a) => (
-                                <Chip key={a} label={a} size="small" color="warning" variant="outlined" />
-                              ))}
+                              <Chip label={`${s.estimatedDaysRemaining} days remaining`} size="small" color="primary" />
+                              <Chip label={`${s.modulesRemaining.length} modules left`} size="small" color="secondary" />
                             </Stack>
+                            <Stack direction="row" spacing={1} flexWrap="wrap">
+                              <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                                Modules remaining:
+                              </Typography>
+                              {s.modulesRemaining.slice(0, 6).map((module) => (
+                                <Chip 
+                                  key={module} 
+                                  label={module} 
+                                  size="small" 
+                                  variant="outlined" 
+                                  sx={{ fontSize: '0.7rem' }}
+                                />
+                              ))}
+                              {s.modulesRemaining.length > 6 && (
+                                <Chip 
+                                  label={`+${s.modulesRemaining.length - 6} more`} 
+                                  size="small" 
+                                  variant="outlined"
+                                  sx={{ fontSize: '0.7rem' }}
+                                />
+                              )}
+                            </Stack>
+                            {s.alerts.length > 0 && (
+                              <Stack direction="row" spacing={1}>
+                                {s.alerts.map((a) => (
+                                  <Chip key={a} label={a} size="small" color="warning" variant="outlined" />
+                                ))}
+                              </Stack>
+                            )}
                           </Stack>
                         </CardContent>
                       </Card>

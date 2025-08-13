@@ -27,14 +27,11 @@ import {
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import PublishIcon from '@mui/icons-material/Publish'
 import SearchIcon from '@mui/icons-material/Search'
-
-
-import EditIcon from '@mui/icons-material/Edit'
-import DeleteIcon from '@mui/icons-material/Delete'
+import LabelIcon from '@mui/icons-material/Label'
+import AddIcon from '@mui/icons-material/Add'
+import ColorizeIcon from '@mui/icons-material/Colorize'
 import TopNav from '../../components/TopNav'
 import { useAppStore } from '../../state/store'
-import IconUpload from '../../components/IconUpload'
-import { CreateTagDialog } from '../../components/CreateTagDialog'
 
 import { DataSet } from 'vis-data'
 import { Timeline } from 'vis-timeline/standalone'
@@ -51,8 +48,6 @@ export default function PlanningPage() {
   const [groups] = useState<Group[]>(store.groups as any)
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
   const [snack, setSnack] = useState({ open: false, message: '' })
-  const [iconUploadOpen, setIconUploadOpen] = useState(false)
-  const [createTagOpen, setCreateTagOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const timeline = useRef<Timeline | null>(null)
   const dsItems = useRef<DataSet<Item> | null>(null)
@@ -123,25 +118,6 @@ export default function PlanningPage() {
     setSnack({ open: true, message: 'Planning published to Active' })
   }
 
-  function handleIconUpload(file: File, label: string) {
-    // In a real app, this would upload to a server
-    // For now, we'll create a data URL and add it as a new tag
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string
-      const color = '#' + Math.floor(Math.random()*16777215).toString(16) // Random color
-      const tag = store.createTag(label, color, dataUrl, undefined)
-      setSnack({ open: true, message: `Icon "${label}" uploaded successfully` })
-    }
-    reader.readAsDataURL(file)
-  }
-
-  function handleCreateTag(label: string, color: string, iconPath?: string) {
-    const tag = store.createTag(label, color, iconPath, undefined)
-    setSnack({ open: true, message: `Tag "${label}" created successfully` })
-    return tag
-  }
-
   return (
     <div style={{ display: 'grid', gridTemplateRows: 'auto 1fr', height: '100vh' }}>
       <TopNav active="planning" />
@@ -168,10 +144,7 @@ export default function PlanningPage() {
             </ToggleButtonGroup>
             <Alert severity="info" variant="outlined">Drag missions to plan; add tags for context</Alert>
             <Divider />
-            <Legend 
-              onUploadIcon={() => setIconUploadOpen(true)} 
-              onCreateTag={() => setCreateTagOpen(true)}
-            />
+            <Legend />
           </Stack>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--panel-2)' }}>
@@ -187,16 +160,8 @@ export default function PlanningPage() {
       </div>
 
       {selectedItem && (
-        <Dialog 
-          open 
-          onClose={() => setSelectedItem(null)} 
-          maxWidth="sm" 
-          fullWidth
-          aria-labelledby="mission-dialog-title"
-          disablePortal={false}
-          keepMounted={false}
-        >
-          <DialogTitle id="mission-dialog-title">
+        <Dialog open onClose={() => setSelectedItem(null)} maxWidth="sm" fullWidth>
+          <DialogTitle>
             Plan Mission {selectedItem.title}
           </DialogTitle>
           <DialogContent>
@@ -216,11 +181,7 @@ export default function PlanningPage() {
                       key={tid}
                       label={
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                          {t.icon && t.icon.startsWith('/assets/') ? (
-                            <img src={t.icon} alt={t.label} style={{ width: 16, height: 16, filter: 'brightness(0) saturate(100%) invert(1)' }} />
-                          ) : (
-                            <i className={`fa-solid ${t.icon || 'fa-tag'}`} style={{ color: t.color }} />
-                          )}
+                          {t.icon && <i className={`fa-solid ${t.icon}`} style={{ color: t.color }} />}
                           <span>{`${t.emoji || ''} ${t.label}`.trim()}</span>
                         </span>
                       }
@@ -231,14 +192,7 @@ export default function PlanningPage() {
                   )
                 })}
                 <TagPicker onPick={handleAddTag} />
-                <Button 
-                  size="small" 
-                  variant="outlined" 
-                  onClick={() => setCreateTagOpen(true)}
-                  sx={{ fontSize: '0.75rem' }}
-                >
-                  Create Tag
-                </Button>
+                <CreateTagButton onCreate={(tag) => selectedItem && handleAddTag(tag.id)} />
               </Stack>
             </Stack>
           </DialogContent>
@@ -249,175 +203,79 @@ export default function PlanningPage() {
       )}
 
       <Snackbar open={snack.open} autoHideDuration={2500} onClose={() => setSnack({ open: false, message: '' })} message={snack.message} />
-      
-      <IconUpload 
-        open={iconUploadOpen} 
-        onClose={() => setIconUploadOpen(false)} 
-        onUpload={handleIconUpload} 
-      />
-      
-      <CreateTagDialog
-        open={createTagOpen}
-        onClose={() => setCreateTagOpen(false)}
-        onCreateTag={handleCreateTag}
-        useIconLibrary={true}
-      />
     </div>
   )
 }
 
-function Legend({ onUploadIcon, onCreateTag }: { onUploadIcon: () => void; onCreateTag: () => void }) {
-  const store = useAppStore()
-  const [editing, setEditing] = useState<string | null>(null)
-  const [draft, setDraft] = useState<{ label: string; color: string; icon: string; emoji: string }>({ label: '', color: '#7c3aed', icon: 'fa-plane', emoji: '' })
-
-  const startEdit = (id: string) => {
-    const t = store.availableTags.find((x) => x.id === id)
-    if (!t) return
-    setEditing(id)
-    setDraft({ label: t.label, color: t.color, icon: t.icon || 'fa-plane', emoji: t.emoji || '' })
-  }
-  const save = () => {
-    if (!editing) return
-    store.updateTag(editing, { label: draft.label, color: draft.color, icon: draft.icon, emoji: draft.emoji })
-    setEditing(null)
-  }
-
+function Legend() {
+  const { availableTags } = useAppStore()
   return (
     <Stack spacing={1}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'var(--muted)' }}>Tags</Typography>
-        <Button 
-          size="small" 
-          variant="outlined" 
-          onClick={onUploadIcon}
-          sx={{ fontSize: '0.75rem' }}
-        >
-          Upload Icon
-        </Button>
-      </Stack>
+      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'var(--muted)' }}>Legend</Typography>
       <Stack spacing={1}>
-        {store.availableTags.map((t) => (
+        {availableTags.map((t) => (
           <Stack key={t.id} direction="row" spacing={1} alignItems="center">
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flex: 1 }}>
-              {t.icon && t.icon.startsWith('/assets/') ? (
-                <img src={t.icon} alt={t.label} style={{ width: 16, height: 16, filter: 'brightness(0) saturate(100%) invert(1)' }} />
-              ) : (
-                <i className={`fa-solid ${t.icon || 'fa-tag'}`} style={{ color: t.color }} />
-              )}
-              <Typography variant="body2">{t.label}</Typography>
-            </span>
-            <Tooltip title="Edit"><IconButton size="small" onClick={() => startEdit(t.id)}><EditIcon fontSize="inherit" /></IconButton></Tooltip>
-            <Tooltip title="Delete"><IconButton size="small" onClick={() => store.deleteTag(t.id)}><DeleteIcon fontSize="inherit" /></IconButton></Tooltip>
+            <span style={{ width: 12, height: 12, borderRadius: 3, background: t.color }} />
+            <Typography variant="body2">{t.emoji ? `${t.emoji} ` : ''}{t.label}</Typography>
           </Stack>
         ))}
-        <Button 
-          size="small" 
-          variant="outlined" 
-          onClick={onCreateTag}
-          sx={{ fontSize: '0.75rem' }}
-        >
-          Create Tag
-        </Button>
       </Stack>
-
-      <Dialog 
-        open={!!editing} 
-        onClose={() => setEditing(null)} 
-        maxWidth="xs" 
-        fullWidth
-        aria-labelledby="edit-tag-dialog-title"
-        disablePortal={false}
-        keepMounted={false}
-      >
-        <DialogTitle id="edit-tag-dialog-title">Edit Tag</DialogTitle>
-        <DialogContent>
-          <Stack spacing={1} sx={{ mt: 1 }}>
-            <TextField size="small" label="Label" value={draft.label} onChange={(e) => setDraft((d) => ({ ...d, label: e.target.value }))} autoFocus />
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Typography variant="body2" sx={{ minWidth: 40 }}>Color:</Typography>
-              <TextField size="small" label="Color" type="color" value={draft.color} onChange={(e) => setDraft((d) => ({ ...d, color: (e.target as any).value }))} sx={{ width: 120 }} />
-              <Box sx={{ ml: 'auto', display: 'inline-flex', alignItems: 'center', gap: 1 }}>
-                {draft.icon && draft.icon.startsWith('/assets/') ? (
-                  <img src={draft.icon} alt={draft.label} style={{ width: 16, height: 16 }} />
-                ) : (
-                  <i className={`fa-solid ${draft.icon}`} style={{ color: draft.color }} />
-                )}
-              </Box>
-            </Stack>
-            <TextField size="small" label="Font Awesome class" value={draft.icon} onChange={(e) => setDraft((d) => ({ ...d, icon: e.target.value }))} />
-            <TextField size="small" label="Emoji" value={draft.emoji} onChange={(e) => setDraft((d) => ({ ...d, emoji: e.target.value }))} />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditing(null)}>Cancel</Button>
-          <Button variant="contained" onClick={save}>Save</Button>
-        </DialogActions>
-      </Dialog>
     </Stack>
   )
 }
 
 function TagPicker({ onPick }: { onPick: (tagId: string) => void }) {
+  const { availableTags } = useAppStore()
+  return (
+    <Stack direction="row" spacing={0.5}>
+      {availableTags.map((t) => (
+        <Tooltip key={t.id} title={t.label}>
+          <IconButton size="small" onClick={() => onPick(t.id)}>
+            {t.icon ? <i className={`fa-solid ${t.icon}`} style={{ color: t.color }} /> : <LabelIcon sx={{ color: t.color }} fontSize="small" />}
+          </IconButton>
+        </Tooltip>
+      ))}
+      <CreateTagButton onCreate={() => {}} />
+    </Stack>
+  )
+}
+
+function CreateTagButton({ onCreate }: { onCreate: (tag: any) => void }) {
   const store = useAppStore()
   const [open, setOpen] = useState(false)
-  const [search, setSearch] = useState('')
-
-  const filtered = store.availableTags.filter((t) => 
-    t.label.toLowerCase().includes(search.toLowerCase())
-  )
-
+  const [label, setLabel] = useState('')
+  const [color, setColor] = useState('#7c3aed')
+  const [icon, setIcon] = useState('fa-star')
+  const [emoji, setEmoji] = useState('')
   return (
     <>
-      <Button size="small" variant="outlined" onClick={() => setOpen(true)}>
-        Add Tag
-      </Button>
-      <Dialog 
-        open={open} 
-        onClose={() => setOpen(false)} 
-        maxWidth="xs" 
-        fullWidth
-        aria-labelledby="add-tag-dialog-title"
-        disablePortal={false}
-        keepMounted={false}
-      >
-        <DialogTitle id="add-tag-dialog-title">Add Tag</DialogTitle>
+      <Tooltip title="Create tag"><IconButton size="small" onClick={() => setOpen(true)}><AddIcon fontSize="small" /></IconButton></Tooltip>
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Create Tag</DialogTitle>
         <DialogContent>
           <Stack spacing={1} sx={{ mt: 1 }}>
-            <TextField
-              size="small"
-              placeholder="Search tags..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              autoFocus
-            />
-            <Stack spacing={1}>
-              {filtered.map((t) => (
-                <Button
-                  key={t.id}
-                  variant="outlined"
-                  size="small"
-                  onClick={() => {
-                    onPick(t.id)
-                    setOpen(false)
-                  }}
-                  sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
-                >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    {t.icon && t.icon.startsWith('/assets/') ? (
-                      <img src={t.icon} alt={t.label} style={{ width: 16, height: 16, filter: 'brightness(0) saturate(100%) invert(1)' }} />
-                    ) : (
-                      <i className={`fa-solid ${t.icon || 'fa-tag'}`} style={{ color: t.color }} />
-                    )}
-                    <span>{t.label}</span>
-                  </span>
-                </Button>
-              ))}
+            <TextField size="small" label="Label" value={label} onChange={(e) => setLabel(e.target.value)} autoFocus />
+            <Stack direction="row" spacing={1} alignItems="center">
+              <ColorizeIcon fontSize="small" />
+              <TextField size="small" label="Color" type="color" value={color} onChange={(e) => setColor((e.target as any).value)} sx={{ width: 120 }} />
+              <Box sx={{ ml: 'auto', display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                <i className={`fa-solid ${icon}`} style={{ color }} />
+              </Box>
             </Stack>
+            <TextField size="small" label="Font Awesome icon class (e.g., fa-plane, fa-flag)" value={icon} onChange={(e) => setIcon(e.target.value)} />
+            <TextField size="small" label="Emoji (optional)" value={emoji} onChange={(e) => setEmoji(e.target.value)} />
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={() => {
+            if (!label.trim()) return
+            const tag = store.createTag(label.trim(), color, icon.trim() || undefined, emoji.trim() || undefined)
+            onCreate(tag)
+            setOpen(false)
+            setLabel('')
+            setEmoji('')
+          }}>Create</Button>
         </DialogActions>
       </Dialog>
     </>
@@ -469,7 +327,6 @@ function labelForDate(date: Date, view: 'day' | 'week') {
   const day = start.getDay()
   const diff = start.getDate() - day + (day === 0 ? -6 : 1)
   start.setDate(diff)
-  start.setHours(6, 0, 0, 0)
   const end = new Date(start.getTime() + 6 * 24 * 60 * 60 * 1000)
   const fmt = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' })
   return `${fmt.format(start)} - ${fmt.format(end)}`
@@ -487,15 +344,11 @@ function renderContent(it: Item, availableTags: any[]) {
   const tags = (it.tags || []).map((tid) => {
     const t = availableTags.find((x: any) => x.id === tid)
     if (!t) return ''
-    const iconPath = t.icon || ''
-    if (iconPath && iconPath.startsWith('/assets/')) {
-      return `<span class="tag-pill" style="color:${t.color}"><img src="${iconPath}" width="12" height="12" style="filter: brightness(0) saturate(100%) invert(1);" /></span>`
-    }
-    const symbol = t.symbol || t.emoji || '•'
-    return `<span class="tag-pill" style="color:${t.color}">${symbol}</span>`
+    const label = `${t.emoji || ''}`.trim()
+    return `<span class="tag-pill" style="color:${t.color}">${label || '•'}</span>`
   }).join('')
   const safeTitle = escapeHtml(it.title)
-  return `${tags}<span style="margin-left:6px;font-weight:700;color:white">${safeTitle}</span>`
+  return `${tags}<span style="margin-left:6px">${safeTitle}</span>`
 }
 
 function buildHoverTitle(it: Item, availableTags: any[]) {

@@ -1,19 +1,14 @@
 'use client'
 
 import React from 'react'
-import TopNav from '../../components/TopNav'
-import Link from 'next/link'
 import {
   Box,
-  Container,
   Typography,
   Stack,
   Chip,
   Divider,
   Tooltip,
-  Button,
 } from '@mui/material'
-import OpenInFullIcon from '@mui/icons-material/OpenInFull'
 
 type RepeaterEvent = {
   id: string
@@ -77,36 +72,23 @@ function HeaderBar() {
       position: 'sticky', top: 0, zIndex: 10,
     }}>
       <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>Unit Ground Events</Typography>
-      <Stack direction="row" spacing={2} alignItems="center">
+      <Stack direction="row" spacing={3} alignItems="center">
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>Last updated: 09:12</Typography>
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>{now}</Typography>
-        <Tooltip title="Open full-screen view">
-          <Button
-            component={Link}
-            href="/repeater/fullscreen"
-            variant="outlined"
-            size="small"
-            startIcon={<OpenInFullIcon />}
-            sx={{ fontWeight: 800 }}
-          >
-            Full Screen
-          </Button>
-        </Tooltip>
       </Stack>
     </Box>
   )
 }
 
-export default function RepeaterPage() {
+export default function RepeaterFullscreenPage() {
   return (
     <Box sx={{ minHeight: '100vh', display: 'grid', gridTemplateRows: 'auto 1fr' }}>
-      <TopNav active="repeater" />
-      <Container maxWidth={false} sx={{ px: { xs: 1, md: 2 }, py: 0 }}>
-        <Box sx={{ mx: 'auto', maxWidth: 1400, border: '1px solid #243049', borderRadius: 1, overflow: 'hidden' }}>
-          <HeaderBar />
+      <HeaderBar />
+      <Box sx={{ px: { xs: 1, md: 2 }, py: 0 }}>
+        <Box sx={{ mx: 'auto', maxWidth: '100%', borderRadius: 0, overflow: 'hidden' }}>
           <Board />
         </Box>
-      </Container>
+      </Box>
     </Box>
   )
 }
@@ -132,24 +114,19 @@ function Board() {
         const idx = next.findIndex((e) => e.id === pick.id)
         if (idx === -1) return prev
         if (op < 0.33) {
-          // Toggle status between ADD and CXL
           next[idx].status = next[idx].status === 'CXL' ? 'ADD' : 'CXL'
           setFlashById((f) => ({ ...f, [pick.id]: 'status' }))
           setTimeout(() => setFlashById((f) => ({ ...f, [pick.id]: undefined })), 1500)
         } else if (op < 0.66) {
-          // Shift time by -10..+10 minutes
-          const delta = (Math.floor(Math.random() * 21) - 10) * 1 // minutes
+          const delta = (Math.floor(Math.random() * 21) - 10) * 1
           const ns = clampMinutes(parseTime(next[idx].start) + delta)
           const ne = Math.max(ns + 15, clampMinutes(parseTime(next[idx].end) + delta))
           next[idx].start = minutesToTime(ns)
           next[idx].end = minutesToTime(ne)
-          // Mark as updated
           setFlashById((f) => ({ ...f, [pick.id]: 'update' }))
           setTimeout(() => setFlashById((f) => ({ ...f, [pick.id]: undefined })), 1500)
-          // Re-sort by start time to simulate reordering
           next.sort((a, b) => parseTime(a.start) - parseTime(b.start))
         } else {
-          // Change asset or instructor randomly
           if (Math.random() < 0.5) {
             next[idx].asset = next[idx].asset.startsWith('SIM') ? '—' : `SIM ${1 + Math.floor(Math.random() * 5)}`
           } else {
@@ -240,12 +217,11 @@ function gridRowSx(header = false, odd = false, past = false) {
     opacity: past && !header ? 0.55 : 1,
     transition: 'transform 200ms ease, background-color 400ms ease, opacity 300ms ease',
     minHeight: 'var(--rowH)',
-    // Portrait-friendly: collapse some columns on small screens
     '@media (max-width: 900px)': {
       gridTemplateColumns: '56px 56px 1fr 120px 1fr 100px',
-      '& > :nth-of-type(4)': { display: 'none' }, // Student
-      '& > :nth-of-type(6)': { display: 'none' }, // Asset
-      '& > :nth-of-type(7)': { display: 'none' }, // Details
+      '& > :nth-of-type(4)': { display: 'none' },
+      '& > :nth-of-type(6)': { display: 'none' },
+      '& > :nth-of-type(7)': { display: 'none' },
     },
   } as const
 }

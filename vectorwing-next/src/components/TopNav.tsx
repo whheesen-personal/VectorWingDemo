@@ -72,6 +72,7 @@ export default function TopNav({ active = 'schedule' }: TopNavProps) {
           <Button component={Link} href="/training" startIcon={<SchoolIcon />} sx={linkSx('training')}>
             Training
           </Button>
+
           {unread > 0 ? (
             <Badge
               badgeContent={unread}
@@ -106,10 +107,10 @@ export default function TopNav({ active = 'schedule' }: TopNavProps) {
             Weather
           </Button>
           <Button component={Link} href="/feedback" startIcon={<RateReviewIcon />} sx={linkSx('feedback')}>
-            Feedback
+            Report Card
           </Button>
           <Button component={Link} href="/repeater" startIcon={<AssessmentIcon />} sx={linkSx('repeater')}>
-            Repeater Screen
+            Live View
           </Button>
           <Button component={Link} href="/resources" startIcon={<PrecisionManufacturingIcon />} sx={linkSx('resources')}>
             Resources
